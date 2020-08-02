@@ -3,7 +3,7 @@ import { FiChevronRight } from 'react-icons/fi';
 import LogoImg from '../../assets/Logo.svg';
 import api from '../../services/api';
 
-import { Title, Form, Repositories } from './style';
+import { Title, Form, Repositories, Error } from './style';
 
 interface Repository {
     full_name: string;
@@ -19,24 +19,35 @@ interface Repository {
 const Dashboard: React.FC = () => {
 
     const [newRepo, setNewRepo] = useState('');
+    const [inputError, setInputError] = useState('');
     const [repositories, setRepositories] = useState<Repository[]>([]);
 
     async function handleAddRepository(event: FormEvent<HTMLFormElement>): Promise<void> {
         event.preventDefault();
 
-        const response = await api.get<Repository>(`repos/${newRepo}`);
+        if (!newRepo) {
+            setInputError('Digit o autor/nome do repositório');
+            return;
+        }
 
-        const repository = response.data;
+        try {
+            const response = await api.get<Repository>(`repos/${newRepo}`);
 
-        setRepositories([...repositories, repository]);
-        setNewRepo('');
+            const repository = response.data;
+
+            setRepositories([...repositories, repository]);
+            setNewRepo('');
+            setInputError('');
+        } catch (err) {
+            setInputError('Erro na busca por esse repositório');
+        }
     }
 
     return (<>
         <img src={LogoImg} alt="Github Explorer logo" />
         <Title>Explore Repositórios do GitHub</Title>
 
-        <Form onSubmit={handleAddRepository}>
+        <Form hasError={!!(inputError)} onSubmit={handleAddRepository}>
             <input
                 value={newRepo}
                 onChange={(e) => setNewRepo(e.target.value)}
@@ -45,6 +56,8 @@ const Dashboard: React.FC = () => {
             <button type="submit" >Pesquisar</button>
         </Form>
 
+        { inputError && <Error>{inputError}</Error>}
+        
         <Repositories>
             {repositories.map(repository => (
                 <a key={repository.full_name} href="teste">
